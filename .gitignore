@@ -1,0 +1,20 @@
+# Maven
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings
+.sts4-cache
+
+# OS
+.DS_Store
+
+# Secrets / env-specific configs
+application-local.properties
+application-dev.properties
+application-prod.properties
+.env
