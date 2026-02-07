@@ -7,7 +7,8 @@ import com.aditya.simple_web_app.web_app.dto.LoginResponseDTO;
 import com.aditya.simple_web_app.web_app.dto.UserRegisterDTO;
 import com.aditya.simple_web_app.web_app.dto.UserRegisterResponseDTO;
 import com.aditya.simple_web_app.web_app.service.UserRegistrationService;
-import com.aditya.simple_web_app.web_app.util.JwtUtil;
+import com.aditya.simple_web_app.web_app.util.TokenService;
+import com.aditya.simple_web_app.web_app.util.TokenService.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -33,9 +34,11 @@ public class AuthController {
 
     private final UserRegistrationService userRegistrationService;
     private final AuthenticationManager authenticationManager;
-    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager) {
+    private final TokenService tokenService;
+    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager, TokenService tokenService) {
         this.userRegistrationService = userRegistrationService;
         this.authenticationManager = authenticationManager;
+        this.tokenService = tokenService;
     }
 
     @PostMapping(value = "/register")
@@ -67,7 +70,7 @@ public class AuthController {
         UserDetails userDetails =
                 (UserDetails) authentication.getPrincipal();
 
-        String token = JwtUtil.generateToken(userDetails);
+        String token = tokenService.generateToken(userDetails);
 
         return ResponseEntity.ok(new LoginResponseDTO(token));
 

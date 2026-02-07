@@ -18,11 +18,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
+    private final TokenService tokenService;
     private final CustomUserDetailsService userDetailsService;
 
-    public JwtAuthFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService) {
-        this.jwtUtil = jwtUtil;
+    public JwtAuthFilter(TokenService tokenService, CustomUserDetailsService userDetailsService) {
+        this.tokenService = tokenService;
+
         this.userDetailsService = userDetailsService;
     }
     @Override
@@ -34,7 +35,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        // 1️⃣ No header or wrong format → skip
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -43,18 +44,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
-            // 2️⃣ Extract username (email) from token
-            String email = jwtUtil.extractUsername(token);
 
-            // 3️⃣ Only authenticate if context is empty
+            String email = tokenService.extractUsername(token);
+
+
             if (email != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 UserDetails userDetails =
                         userDetailsService.loadUserByUsername(email);
 
-                // 4️⃣ Validate token against user
-                if (jwtUtil.isTokenValid(token, userDetails)) {
+
+                if (tokenService.isTokenValid(token, userDetails)) {
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
@@ -75,10 +76,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
         } catch (Exception ex) {
-            // Invalid token → do nothing, fall through
+
         }
 
-        // 6️⃣ Continue chain
+
         filterChain.doFilter(request, response);
     }
 
