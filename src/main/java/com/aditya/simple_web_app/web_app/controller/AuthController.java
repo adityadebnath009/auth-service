@@ -2,14 +2,12 @@ package com.aditya.simple_web_app.web_app.controller;
 
 import com.aditya.simple_web_app.web_app.Domain.Role;
 import com.aditya.simple_web_app.web_app.Domain.User;
-import com.aditya.simple_web_app.web_app.dto.LoginRequestDTO;
-import com.aditya.simple_web_app.web_app.dto.LoginResponseDTO;
-import com.aditya.simple_web_app.web_app.dto.UserRegisterDTO;
-import com.aditya.simple_web_app.web_app.dto.UserRegisterResponseDTO;
+import com.aditya.simple_web_app.web_app.dto.*;
 import com.aditya.simple_web_app.web_app.service.UserRegistrationService;
 import com.aditya.simple_web_app.web_app.util.TokenService;
 import com.aditya.simple_web_app.web_app.util.TokenService.*;
 import jakarta.validation.Valid;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -35,10 +33,12 @@ public class AuthController {
     private final UserRegistrationService userRegistrationService;
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
-    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager, TokenService tokenService) {
+    private final ApplicationEventPublisher applicationEventPublisher;
+    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager, TokenService tokenService, ApplicationEventPublisher applicationEventPublisher) {
         this.userRegistrationService = userRegistrationService;
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @PostMapping(value = "/register")
@@ -56,6 +56,10 @@ public class AuthController {
                 user.getCreatedAt()
 
         );
+        applicationEventPublisher.publishEvent(
+                new UserCreatedEvent(user.getEmail())
+        );
+
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
