@@ -34,7 +34,10 @@ public class User {
     private String password;   // BCrypt hash
 
     @Column(nullable = false)
-    private boolean enabled = true;
+    private boolean enabled;
+
+    @Column(nullable = false)
+    private boolean emailVerified;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

@@ -56,9 +56,7 @@ public class AuthController {
                 user.getCreatedAt()
 
         );
-        applicationEventPublisher.publishEvent(
-                new UserCreatedEvent(user.getEmail())
-        );
+
 
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

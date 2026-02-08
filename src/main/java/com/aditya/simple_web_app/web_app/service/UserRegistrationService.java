@@ -2,9 +2,11 @@ package com.aditya.simple_web_app.web_app.service;
 
 import com.aditya.simple_web_app.web_app.Domain.Role;
 import com.aditya.simple_web_app.web_app.Domain.User;
+import com.aditya.simple_web_app.web_app.dto.UserCreatedEvent;
 import com.aditya.simple_web_app.web_app.exception.UserAlreadyExistedException;
 import com.aditya.simple_web_app.web_app.repository.RoleRepository;
 import com.aditya.simple_web_app.web_app.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,11 +23,13 @@ public class UserRegistrationService implements UserService{
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public UserRegistrationService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserRegistrationService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -44,7 +48,12 @@ public class UserRegistrationService implements UserService{
 
         Role userRole = roleRepository.findByName("ROLE_USER").get();
         user.getRoles().add(userRole);
-        return userRepository.save(user);
+        userRepository.save(user);
+
+        eventPublisher.publishEvent(
+                new UserCreatedEvent(user.getEmail(), user.getId())
+        );
+        return user;
 
 
     }

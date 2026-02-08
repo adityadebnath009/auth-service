@@ -63,7 +63,7 @@ public class WebSecurityConfig {
                                         )
                         )
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);//JWT must be processed before Spring tries default authentication
 
         return http.build();
     }

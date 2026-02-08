@@ -39,7 +39,7 @@ public class GmailEmailService implements EmailService{
     }
 
     @Override
-    public void sendVerificationEmail(String to, String verificationLink) {
+    public void sendVerificationEmail(String to, String Vlink) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
@@ -52,7 +52,7 @@ public class GmailEmailService implements EmailService{
 
                 This link will expire soon.
                 """
-                        .formatted(verificationLink)
+                        .formatted(Vlink)
         );
 
         mailSender.send(message);
