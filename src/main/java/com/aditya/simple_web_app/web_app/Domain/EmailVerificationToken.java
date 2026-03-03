@@ -21,9 +21,9 @@ public class EmailVerificationToken {
 
     private String token;
 
-    @OneToOne
+    @OneToOne()
     @JoinColumn(
-            name = "user_id", nullable = false,
+            name = "user_id", nullable = false,unique = true,
             referencedColumnName = "id"
     )
     private User user;

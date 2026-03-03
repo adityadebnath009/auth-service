@@ -2,7 +2,9 @@ package com.aditya.simple_web_app.web_app.util;
 
 
 import com.aditya.simple_web_app.web_app.service.CustomUserDetailsService;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.io.IOException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,14 +20,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final TokenService tokenService;
+    private final Hs256TokenService tokenService;
     private final CustomUserDetailsService userDetailsService;
 
-    public JwtAuthFilter(TokenService tokenService, CustomUserDetailsService userDetailsService) {
+    public JwtAuthFilter(Hs256TokenService tokenService, CustomUserDetailsService userDetailsService) {
         this.tokenService = tokenService;
 
         this.userDetailsService = userDetailsService;
     }
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -45,7 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
 
-            String email = tokenService.extractUsername(token);
+            String email = tokenService.extractUserNameFromAccessToken(token);
 
 
             if (email != null &&
@@ -55,7 +58,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         userDetailsService.loadUserByUsername(email);
 
 
-                if (tokenService.isTokenValid(token, userDetails)) {
+                if (tokenService.isAccessTokenValid(token, userDetails)) {
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
@@ -75,13 +78,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
 
+        } catch (ExpiredJwtException ex) {
+            logger.warn("JWT expired: {}");
+        } catch (SignatureException ex) {
+            logger.warn("Invalid JWT signature: {}");
         } catch (Exception ex) {
-
+            logger.error("Unexpected JWT error", ex);
         }
-
-
         filterChain.doFilter(request, response);
+
     }
-
-
 }

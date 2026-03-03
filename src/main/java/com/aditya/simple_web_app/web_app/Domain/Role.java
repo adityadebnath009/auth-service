@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
+import java.util.Set;
+
 
 @Builder
 @Getter
@@ -23,4 +26,11 @@ public class Role {
     @Column(nullable = false, unique = false)
     private String name; //ROLE_USER, ROLE_ADMIN
 
+
+    @ManyToMany(mappedBy = "roles")
+    private Set<User> users = new HashSet<>();
+
+    public Role(String roleUser) {
+        this.name = roleUser;
+    }
 }

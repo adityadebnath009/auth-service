@@ -54,6 +54,10 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+
+    @OneToOne(mappedBy = "user")
+    private EmailVerificationToken emailVerificationToken;
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();

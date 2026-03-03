@@ -25,5 +25,14 @@ public class HomeController {
         return (CsrfToken) request.getAttribute(CsrfToken.class.getName());
 
     }
+    @GetMapping("/user")
+    public String user(){
+        return "Welcome to my World of Commons";
+    }
+
+    @GetMapping("/admin")
+    public String admin(){
+        return "Welcome to my World of Aliens";
+    }
 
 }

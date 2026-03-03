@@ -21,11 +21,11 @@ public class RoleInitializer {
 
         if(!roleRepository.existsByName("ROLE_USER"))
         {
-            roleRepository.save(new Role(null, "ROLE_USER"));
+            roleRepository.save(new Role("ROLE_USER"));
         }
         if(!roleRepository.existsByName("ROLE_ADMIN"))
         {
-            roleRepository.save(new Role(null, "ROLE_ADMIN"));
+            roleRepository.save(new Role("ROLE_ADMIN"));
 
         }
     }
