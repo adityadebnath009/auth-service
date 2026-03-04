@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 
 @Getter
@@ -21,7 +22,17 @@ public class RefreshToken {
     private Long id;
 
     @Column(nullable = false, unique = true)
+    private UUID sessionId;
+    @PrePersist
+    public void generateSessionId() {
+        if (this.sessionId == null) {
+            this.sessionId = UUID.randomUUID();
+        }
+    }
+
+    @Column(nullable = false, unique = true)
     private String tokenHash;
+
 
 
     @Column(nullable = false)
@@ -36,5 +47,10 @@ public class RefreshToken {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+
+    private String deviceName;
+    private String userAgent;
+    private String ipAddress;
 
 }

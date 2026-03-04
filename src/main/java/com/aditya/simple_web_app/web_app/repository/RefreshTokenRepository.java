@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken,Long> {
 
@@ -22,4 +23,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken,Long>
 
 
     Optional<RefreshToken> findByTokenHash(String hash);
+    void deleteBySessionId(UUID sessionId);
+
+    // Also useful for the validation check:
+    Optional<RefreshToken> findBySessionId(UUID sessionId);
 }

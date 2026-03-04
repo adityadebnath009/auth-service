@@ -14,6 +14,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.web.servlet.server.Session;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -25,13 +26,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 
@@ -79,7 +79,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO request, HttpServletResponse response)
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO request, HttpServletResponse response, HttpServletRequest httpServletRequest)
     {
 
         //Here we create an unauthenticated token.
@@ -95,13 +95,13 @@ public class AuthController {
         String refreshToken = tokenService.generateRefreshToken(userDetails);
 
 
-         refreshTokenService.createRefreshToken(userDetails.getUser(),refreshToken);
+         refreshTokenService.createRefreshToken(userDetails.getUser(),refreshToken,httpServletRequest.getHeader("User-Agent"),httpServletRequest.getRemoteAddr());
 
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
                 .secure(true) // true in production (HTTPS)
-                .path("/api/auth/refresh")
+                .path("/auth/refresh")
                 .maxAge(7 * 24 * 60 * 60) // 7 days
                 .sameSite("Strict")
                 .build();
@@ -154,13 +154,14 @@ public class AuthController {
 
             String newRefreshToken = tokenService.generateRefreshToken(userDetails);
 
-            refreshTokenService.createRefreshToken(userDetails.getUser(),newRefreshToken);
+            refreshTokenService.createRefreshToken(userDetails.getUser(),newRefreshToken,request.getHeader("User-Agent"),request.getRemoteAddr());
 
             String newAccessToken =
                     tokenService.generateAccessToken(userDetails);
             ResponseCookie cookie = ResponseCookie.from("refresh_token",newRefreshToken)
                     .httpOnly(true)
                     .secure(true)
+                    .path("/auth/refresh")
                     .sameSite("strict")
                     .maxAge(7*24*60*60)
                     .build();
@@ -193,9 +194,9 @@ public class AuthController {
 
         ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
+                .path("/auth/refresh")
                 .secure(true)
-                .path("/auth")
-                .maxAge(0)
+                .maxAge(0) //tells browser to delete it
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
 
@@ -215,13 +216,42 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
                 .secure(true)
-                .path("/auth")
+                .path("/auth/refresh")
                 .maxAge(0)
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
 
         return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+
+    @GetMapping("/sessions")
+    public ResponseEntity<List<SessionDTO>> getAllSessions(Authentication authentication) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        List<SessionDTO> sessions = refreshTokenService.getAllTokens(userDetails.getUser())
+                .stream()
+                .map(t -> new SessionDTO(
+                        t.getSessionId(),
+                        t.getUserAgent(),
+                        t.getIpAddress(),
+                        t.getCreatedDate()
+
+                )).collect(Collectors.toList());
+
+        return ResponseEntity.ok(sessions);
+    }
+
+
+    @DeleteMapping("/sessions/{sessionID}")
+    public ResponseEntity<?> deleteSession(Authentication authentication, @PathVariable("sessionID") String sessionID) {
+
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        refreshTokenService.revokeBySessionId(UUID.fromString(sessionID),userDetails.getUser());
+        return  ResponseEntity.status(HttpStatus.OK).build();
+    }
+
 
 
 

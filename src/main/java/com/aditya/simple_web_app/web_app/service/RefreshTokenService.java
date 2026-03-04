@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class RefreshTokenService {
@@ -38,7 +39,7 @@ public class RefreshTokenService {
     }
 
 
-    public RefreshToken createRefreshToken(User user, String rawToken) {
+    public RefreshToken createRefreshToken(User user, String rawToken, String userAgent, String ipAddress) {
 
         String hash = hash(rawToken);
 
@@ -49,6 +50,8 @@ public class RefreshTokenService {
                 .expiryDate(Instant.now().plus(7, ChronoUnit.DAYS))
                 .createdDate(Instant.now())
                 .user(user)
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
                 .build();
         return refreshTokenRepository.save(refreshToken);
 
@@ -96,6 +99,28 @@ public class RefreshTokenService {
         }
 
         refreshTokenRepository.saveAll(tokens);
+    }
+
+    public List<RefreshToken> getAllTokens(User user) {
+
+        return refreshTokenRepository.findByUserAndRevokedFalse(user);
+
+    }
+
+    public void revokeBySessionId(UUID sessionId, User user) {
+
+        RefreshToken token = refreshTokenRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new RuntimeException("SessionID not found"));
+
+
+        //Its an important part to take care of that the authenticated user is revoking the session
+        if(!token.getUser().getId().equals(user.getId())){
+            throw new RuntimeException("UNAUTHORIZED SESSION REVOKING ATTEMPT");
+        }
+
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+
     }
 
 
