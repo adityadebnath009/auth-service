@@ -5,7 +5,9 @@ import java.util.UUID;
 
 public record SessionDTO(
         UUID sessionId,
-        String userAgent,
+        String deviceName,
         String ipAddress,
+
         Instant createdDate
+
 ) {}

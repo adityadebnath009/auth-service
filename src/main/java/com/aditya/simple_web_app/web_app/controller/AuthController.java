@@ -28,12 +28,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
-
+import ua_parser.Parser;
+import ua_parser.Client;
 
 @Validated
 @RestController
@@ -229,17 +227,25 @@ public class AuthController {
     public ResponseEntity<List<SessionDTO>> getAllSessions(Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        List<SessionDTO> sessions = refreshTokenService.getAllTokens(userDetails.getUser())
-                .stream()
-                .map(t -> new SessionDTO(
-                        t.getSessionId(),
-                        t.getUserAgent(),
-                        t.getIpAddress(),
-                        t.getCreatedDate()
+        Parser uaParser = new Parser();
 
-                )).collect(Collectors.toList());
+        List<RefreshToken> refreshTokenList = refreshTokenService.getAllTokens(userDetails.getUser());
+        List<SessionDTO> sessionDTOList = new ArrayList<>();
 
-        return ResponseEntity.ok(sessions);
+        for (RefreshToken refreshToken : refreshTokenList) {
+            String uaString = refreshToken.getUserAgent();
+            Client client = uaParser.parse(uaString);
+            String deviceName = STR."\{client.userAgent.family} on \{client.os.family}";
+            sessionDTOList.add(new SessionDTO(
+                    refreshToken.getSessionId(),
+                    refreshToken.getDeviceName(),
+                    refreshToken.getIpAddress(),
+                    refreshToken.getCreatedDate()
+
+            ));
+        }
+
+        return ResponseEntity.ok(sessionDTOList);
     }
 
 
