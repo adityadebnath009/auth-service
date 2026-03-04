@@ -47,10 +47,10 @@ public class WebSecurityConfig {
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/home","/auth/**", "/auth/**").permitAll()
+                        .requestMatchers("/home","/auth/refresh","/auth/login","/auth/register").permitAll()
                         .requestMatchers("/home/user").hasRole("USER")
                         .requestMatchers("/home/admin").hasRole("ADMIN")
-                        .requestMatchers("user/me").authenticated()   // TEMPORARY
+                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all").authenticated()   // TEMPORARY
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(

@@ -1,9 +1,12 @@
 package com.aditya.simple_web_app.web_app.controller;
 
+import com.aditya.simple_web_app.web_app.Domain.RefreshToken;
 import com.aditya.simple_web_app.web_app.Domain.Role;
 import com.aditya.simple_web_app.web_app.Domain.User;
 import com.aditya.simple_web_app.web_app.dto.*;
+import com.aditya.simple_web_app.web_app.service.CustomUserDetails;
 import com.aditya.simple_web_app.web_app.service.CustomUserDetailsService;
+import com.aditya.simple_web_app.web_app.service.RefreshTokenService;
 import com.aditya.simple_web_app.web_app.service.UserRegistrationService;
 import com.aditya.simple_web_app.web_app.util.TokenService;
 import com.aditya.simple_web_app.web_app.util.TokenService.*;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -42,12 +46,14 @@ public class AuthController {
     private final TokenService tokenService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CustomUserDetailsService customUserDetailsService;
-    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager, TokenService tokenService, ApplicationEventPublisher applicationEventPublisher, CustomUserDetailsService customUserDetailsService) {
+    private final RefreshTokenService refreshTokenService;
+    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager, TokenService tokenService, ApplicationEventPublisher applicationEventPublisher, CustomUserDetailsService customUserDetailsService, RefreshTokenService refreshTokenService) {
         this.userRegistrationService = userRegistrationService;
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.applicationEventPublisher = applicationEventPublisher;
         this.customUserDetailsService = customUserDetailsService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping(value = "/register")
@@ -82,11 +88,15 @@ public class AuthController {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
 
-        UserDetails userDetails =
-                (UserDetails) authentication.getPrincipal();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
 
         String accessToken = tokenService.generateAccessToken(userDetails);
         String refreshToken = tokenService.generateRefreshToken(userDetails);
+
+
+         refreshTokenService.createRefreshToken(userDetails.getUser(),refreshToken);
+
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
@@ -130,9 +140,13 @@ public class AuthController {
             UserDetails userDetails =
                     customUserDetailsService.loadUserByUsername(username);
 
-            if (!tokenService.isRefreshTokenValid(refreshToken, userDetails)) {
+            Optional<RefreshToken> storedToken =
+                    refreshTokenService.validateRefreshToken(refreshToken);
+
+            if (storedToken.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
+
             String newAccessToken =
                     tokenService.generateAccessToken(userDetails);
 
@@ -146,4 +160,52 @@ public class AuthController {
 
 
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return ResponseEntity.ok().build();
+        }
+
+
+        Arrays.stream(cookies)
+                .filter(cookie -> "refresh_token".equals(cookie.getName()))
+                .findFirst()
+                .ifPresent(cookie -> refreshTokenService.revokeToken(cookie.getValue()));
+
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/auth")
+                .maxAge(0)
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PostMapping("/logout-all")
+    public ResponseEntity<?> logoutAll(Authentication authentication, HttpServletResponse response) {
+
+        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        refreshTokenService.revokeAllUserTokens(userDetails.getUser());
+
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/auth")
+                .maxAge(0)
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+
+
 }
