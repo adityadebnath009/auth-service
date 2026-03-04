@@ -115,7 +115,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refreshToken(
-            HttpServletRequest request
+            HttpServletRequest request, HttpServletResponse response
     ) {
 
         Cookie[] cookies = request.getCookies();
@@ -137,18 +137,35 @@ public class AuthController {
         try{
             String username = tokenService.extractUsernameFromRefreshToken(refreshToken);
 
-            UserDetails userDetails =
-                    customUserDetailsService.loadUserByUsername(username);
+            CustomUserDetails userDetails =
+                    (CustomUserDetails) customUserDetailsService.loadUserByUsername(username);
 
             Optional<RefreshToken> storedToken =
-                    refreshTokenService.validateRefreshToken(refreshToken);
+                    Optional.ofNullable(refreshTokenService.validateRefreshToken(refreshToken));
 
-            if (storedToken.isEmpty()) {
+
+            if (storedToken.isEmpty()) {//Checks if the refresh token is validated or not
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
+            //Revoke the refresh token,
+            // and we are actually implementing the rotation refresh token concept.
+            refreshTokenService.revokeToken(refreshToken);
+
+            String newRefreshToken = tokenService.generateRefreshToken(userDetails);
+
+            refreshTokenService.createRefreshToken(userDetails.getUser(),newRefreshToken);
+
             String newAccessToken =
                     tokenService.generateAccessToken(userDetails);
+            ResponseCookie cookie = ResponseCookie.from("refresh_token",newRefreshToken)
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("strict")
+                    .maxAge(7*24*60*60)
+                    .build();
+
+            response.addHeader("Set-Cookie", cookie.toString());
 
             return ResponseEntity.ok(new LoginResponseDTO(newAccessToken));
         }

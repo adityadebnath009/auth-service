@@ -54,24 +54,25 @@ public class RefreshTokenService {
 
     }
 
-    public Optional<RefreshToken> validateRefreshToken(String rawToken) {
+    public RefreshToken validateRefreshToken(String rawToken) {
 
         String hash = hash(rawToken);
 
         Optional<RefreshToken> tokenOpt =
-                refreshTokenRepository.findByTokenHashAndRevokedFalse(hash);
-
-        if (tokenOpt.isEmpty()) {
-            return Optional.empty();
-        }
+                refreshTokenRepository.findByTokenHash(hash);
 
         RefreshToken token = tokenOpt.get();
-
-        if (token.getExpiryDate().isBefore(Instant.now())) {
-            return Optional.empty();
+        if(token.isRevoked()){
+            revokeAllUserTokens(token.getUser());
+            throw new RuntimeException("Old Refresh Token reuse is detected");
         }
 
-        return Optional.of(token);
+        if (token.getExpiryDate().isBefore(Instant.now())) {
+            throw new RuntimeException("Refresh token is expired");
+        }
+
+
+        return token;
     }
 
     public void revokeToken(String rawToken) {
