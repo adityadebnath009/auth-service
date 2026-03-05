@@ -81,8 +81,13 @@ public class AuthController {
     {
 
         //Here we create an unauthenticated token.
-        // The Authentication Manager receives it, it calls our custom user data service,
-        // verifies the password, and if it is valid, then it returns a new authenticated token.
+        // The Authentication Manager receives it, the authentication manager has a provider manager. What it actually does is:
+        //- It has many authentication providers.
+        //- It checks which authentication provider supports these credentials.
+        //- It selects and acts like a delegator.
+        //- The authentication provider calls the UserDetailsService, which fetches the data from the database and then verifies if it is valid, and then returns a new authenticated object.
+
+
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
 

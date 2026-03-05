@@ -50,7 +50,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/home","/auth/refresh","/auth/login","/auth/register").permitAll()
                         .requestMatchers("/home/user").hasRole("USER")
                         .requestMatchers("/home/admin").hasRole("ADMIN")
-                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all").authenticated()   // TEMPORARY
+                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all").authenticated().anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(
@@ -68,7 +68,14 @@ public class WebSecurityConfig {
                                         )
                         )
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);//JWT must be processed before Spring tries default authentication
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+//        we set the JwtAuthFilter before the UsernamePasswordAuthenticationFilter.
+//        JwtAuthFilter sets the Security Context Holder,
+//        and then the next filter changes will see that yes,
+//        the Security Context Holder is already fixed;
+//        then we don't need to do anything.
+//        It passes, and finally the authorization chain comes.
+//        It checks whether it is valid or not, and it proceeds and reaches the controller.
 
         return http.build();
     }

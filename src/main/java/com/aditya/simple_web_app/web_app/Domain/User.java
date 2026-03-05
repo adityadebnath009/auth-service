@@ -30,8 +30,27 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = true)
+    private String password;// BCrypt hash
+
+    @Column(nullable = true)
+    private String name;
+
+    @Column(nullable = true)
+    private String profilePicture;
+
+    @Column(nullable = true)
+    private String bio;
+
+    @Column(nullable = true)
+    private String providerId;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String password;   // BCrypt hash
+    @Builder.Default
+    private AuthProvider authenticationType = AuthProvider.LOCAL;
+
+
 
     @Column(nullable = false)
     private boolean enabled;
