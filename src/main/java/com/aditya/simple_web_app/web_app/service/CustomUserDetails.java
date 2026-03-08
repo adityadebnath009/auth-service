@@ -5,21 +5,55 @@ import com.aditya.simple_web_app.web_app.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
-public class CustomUserDetails implements UserDetails {
+public class CustomUserDetails implements UserDetails, OAuth2User, OidcUser {
 
 
 
     private final User user;
+    private Map<String, Object> attributes;
     public CustomUserDetails(User user) {
         this.user = user;
 
     }
+
+    public CustomUserDetails(User user, Map<String, Object> attributes) {
+        this.user = user;
+        this.attributes = attributes;
+    }
+    private OidcIdToken idToken;         // add this
+    private OidcUserInfo userInfo;       // add this
+
+
+
+
+    @Override
+    public Map<String, Object> getClaims() {
+        return attributes;
+    }
+
+    @Override
+    public OidcUserInfo getUserInfo() {
+        return userInfo;
+    }
+
+    @Override
+    public OidcIdToken getIdToken() {
+        return idToken;
+    }
     public User getUser() {
         return user;
+    }
+    public Map<String, Object> getAttributes() {
+        return attributes;
     }
 
     @Override
@@ -44,5 +78,10 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return user.isEnabled();
+    }
+
+    @Override
+    public String getName() {
+        return user.getEmail();
     }
 }

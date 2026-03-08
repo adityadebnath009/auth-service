@@ -19,7 +19,7 @@ public class OAuthUserInfoFactory {
                     (String)properties.get("picture")
             );
             case GITHUB -> new OAuthUserInfo(
-                    (String)properties.get("id"),
+                    String.valueOf(properties.get("id")),
                     (String)properties.get("email"),
                     (String)properties.get("name"),
                     (String)properties.get("picture")

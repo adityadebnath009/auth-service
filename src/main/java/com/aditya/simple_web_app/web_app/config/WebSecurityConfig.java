@@ -1,6 +1,7 @@
 package com.aditya.simple_web_app.web_app.config;
 
 
+import com.aditya.simple_web_app.web_app.service.CustomOAuthUserService;
 import com.aditya.simple_web_app.web_app.util.JwtAuthFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Configurable;
@@ -21,6 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -36,7 +38,7 @@ public class WebSecurityConfig {
         return new BCryptPasswordEncoder();
     }
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter, CustomOAuthUserService oAuthUserService, OAuthSuccessHandler OAuthSuccessHandler) throws Exception {
 
 
         http
@@ -47,10 +49,22 @@ public class WebSecurityConfig {
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/home","/auth/refresh","/auth/login","/auth/register").permitAll()
+                        .requestMatchers("/home","/auth/refresh","/auth/login","/auth/register",
+                                "/",
+                                "/index.html",
+                                "/*.html",
+                                "/*.js",
+                                "/home",
+                                "/*.css").permitAll()
                         .requestMatchers("/home/user").hasRole("USER")
                         .requestMatchers("/home/admin").hasRole("ADMIN")
-                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all").authenticated().anyRequest().authenticated()
+                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all","/oauth2/**","/login/oauth2/**").authenticated().anyRequest().authenticated()
+                )
+                .oauth2Login(
+                        oauth -> oauth.userInfoEndpoint(
+                                userInfo ->
+                                        userInfo.userService(oAuthUserService).oidcUserService(oidcUserService(oAuthUserService))
+                        ).successHandler(OAuthSuccessHandler)
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(
@@ -101,6 +115,13 @@ public class WebSecurityConfig {
                 new DefaultMethodSecurityExpressionHandler();
         handler.setRoleHierarchy(roleHierarchy);
         return handler;
+    }
+
+    @Bean
+    public OidcUserService oidcUserService(CustomOAuthUserService oAuthUserService) {
+        OidcUserService oidcUserService = new OidcUserService();
+        oidcUserService.setOauth2UserService(oAuthUserService);
+        return oidcUserService;
     }
 
 
