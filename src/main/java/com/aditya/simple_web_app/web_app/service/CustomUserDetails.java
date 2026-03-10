@@ -19,7 +19,9 @@ public class CustomUserDetails implements UserDetails, OAuth2User, OidcUser {
 
 
     private final User user;
-    private Map<String, Object> attributes;
+    private  OidcIdToken idToken;
+    private OidcUserInfo userInfo;
+    private  Map<String, Object> attributes;
     public CustomUserDetails(User user) {
         this.user = user;
 
@@ -29,10 +31,16 @@ public class CustomUserDetails implements UserDetails, OAuth2User, OidcUser {
         this.user = user;
         this.attributes = attributes;
     }
-    private OidcIdToken idToken;         // add this
-    private OidcUserInfo userInfo;       // add this
 
 
+    public CustomUserDetails(User user, Map<String, Object> attributes, OidcIdToken idToken, OidcUserInfo userInfo) {
+
+
+        this.user = user;
+        this.idToken = idToken;
+        this.userInfo = userInfo;
+        this.attributes = attributes;
+    }
 
 
     @Override

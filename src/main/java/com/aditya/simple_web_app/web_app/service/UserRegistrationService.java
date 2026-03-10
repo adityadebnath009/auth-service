@@ -50,12 +50,15 @@ public class UserRegistrationService implements UserService{
         user.getRoles().add(userRole);
         userRepository.save(user);
 
-        eventPublisher.publishEvent(
-                new UserCreatedEvent(user.getEmail(), user.getId())
-        );
         return user;
 
 
+    }
+
+    public void verifyUser(User user) {
+        user.setEnabled(true);
+        user.setEmailVerified(true);
+        userRepository.save(user);
     }
 
     @Override

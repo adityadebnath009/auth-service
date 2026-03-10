@@ -21,10 +21,13 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<LoggedInUserResponse> getLoggedInUser(@AuthenticationPrincipal CustomUserDetails userDetails)
     {
+
+
        User user = userDetails.getUser();
 
        LoggedInUserResponse response = new LoggedInUserResponse(
                user.getId(),
+               user.getName(),
                user.getEmail(),
                user.getRoles()
                        .stream().map(Role::getName).collect(Collectors.toSet()),

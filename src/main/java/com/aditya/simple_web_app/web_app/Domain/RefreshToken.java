@@ -49,6 +49,8 @@ public class RefreshToken {
     private User user;
 
 
+
+
     private String deviceName;
     private String userAgent;
     private String ipAddress;

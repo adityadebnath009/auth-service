@@ -9,6 +9,7 @@ import java.util.UUID;
 public record LoggedInUserResponse(
 
         UUID id,
+        String name,
         String email,
         Set<String> roles,
         Instant createdAt

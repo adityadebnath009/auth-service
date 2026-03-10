@@ -1,13 +1,11 @@
 package com.aditya.simple_web_app.web_app.controller;
 
+import com.aditya.simple_web_app.web_app.Domain.EmailVerificationToken;
 import com.aditya.simple_web_app.web_app.Domain.RefreshToken;
 import com.aditya.simple_web_app.web_app.Domain.Role;
 import com.aditya.simple_web_app.web_app.Domain.User;
 import com.aditya.simple_web_app.web_app.dto.*;
-import com.aditya.simple_web_app.web_app.service.CustomUserDetails;
-import com.aditya.simple_web_app.web_app.service.CustomUserDetailsService;
-import com.aditya.simple_web_app.web_app.service.RefreshTokenService;
-import com.aditya.simple_web_app.web_app.service.UserRegistrationService;
+import com.aditya.simple_web_app.web_app.service.*;
 import com.aditya.simple_web_app.web_app.util.TokenService;
 import com.aditya.simple_web_app.web_app.util.TokenService.*;
 import jakarta.servlet.http.Cookie;
@@ -45,19 +43,24 @@ public class AuthController {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CustomUserDetailsService customUserDetailsService;
     private final RefreshTokenService refreshTokenService;
-    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager, TokenService tokenService, ApplicationEventPublisher applicationEventPublisher, CustomUserDetailsService customUserDetailsService, RefreshTokenService refreshTokenService) {
+
+    private final EmailVerificationTokenService emailVerificationTokenService;
+    public AuthController(UserRegistrationService userRegistrationService, AuthenticationManager authenticationManager, TokenService tokenService, ApplicationEventPublisher applicationEventPublisher, CustomUserDetailsService customUserDetailsService, RefreshTokenService refreshTokenService,EmailVerificationTokenService emailVerificationTokenService) {
         this.userRegistrationService = userRegistrationService;
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.applicationEventPublisher = applicationEventPublisher;
         this.customUserDetailsService = customUserDetailsService;
         this.refreshTokenService = refreshTokenService;
+        this.emailVerificationTokenService = emailVerificationTokenService;
     }
 
     @PostMapping(value = "/register")
     public ResponseEntity<UserRegisterResponseDTO> register(@RequestBody @Valid UserRegisterDTO userRegister)
     {
         User user = userRegistrationService.registerUser(userRegister.email(),userRegister.password());
+        String rawToken = emailVerificationTokenService.generateToken(user);
+        applicationEventPublisher.publishEvent(new UserCreatedEvent(user, rawToken));
 
         UserRegisterResponseDTO response = new UserRegisterResponseDTO(
                 user.getId(),
@@ -76,6 +79,25 @@ public class AuthController {
 
     }
 
+    @GetMapping("/verify/{token}")
+    public ResponseEntity<?> verifyEmail(@PathVariable String token) {
+
+        Optional<EmailVerificationToken> verificationToken =
+                emailVerificationTokenService.validateToken(token);
+
+        if (verificationToken.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid or expired verification token.");
+        }
+
+        emailVerificationTokenService.markUsed(verificationToken.get());
+
+        User user = verificationToken.get().getUser();
+        userRegistrationService.verifyUser(user);
+
+        return ResponseEntity.ok("Email verified successfully. You can now log in.");
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO request, HttpServletResponse response, HttpServletRequest httpServletRequest)
     {
@@ -92,7 +114,6 @@ public class AuthController {
 
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
 
         String accessToken = tokenService.generateAccessToken(userDetails);
         String refreshToken = tokenService.generateRefreshToken(userDetails);

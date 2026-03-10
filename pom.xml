@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.aditya.simple-web-app</groupId>
-	<artifactId>web-app</artifactId>
+	<artifactId>backendforge</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>web-app</name>
 	<description>Demo project for Spring Boot</description>

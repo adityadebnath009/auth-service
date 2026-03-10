@@ -13,20 +13,31 @@ import java.time.Instant;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "email_verification_token")
+@Table(name = "email_verification_tokens")
 public class EmailVerificationToken {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String token;
+    @Column(nullable = false, unique = true)
+    private String tokenHash;
 
-    @OneToOne()
-    @JoinColumn(
-            name = "user_id", nullable = false,unique = true,
-            referencedColumnName = "id"
-    )
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true, referencedColumnName = "id")
     private User user;
 
+    @Column(nullable = false)
     private Instant expiresAt;
+
+    @Column(nullable = false)
+    private Instant createdAt;
+
+    @Column(nullable = false)
+    private boolean used;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = Instant.now();
+    }
 }

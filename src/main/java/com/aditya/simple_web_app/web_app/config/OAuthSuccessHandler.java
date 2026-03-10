@@ -56,8 +56,9 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         response.addHeader("Set-Cookie", refreshCookie.toString());
 
         // Step 5 — redirect frontend with access token in URL
+
         getRedirectStrategy().sendRedirect(request, response,
-                "http://localhost:8080/?token=" + accessToken);
+                "http://localhost:5173/oauth/callback?token=" + accessToken);
 
 
     }

@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,8 @@ public class CustomOAuthUserService extends DefaultOAuth2UserService {
 
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
+
+
         System.out.println("OAuth attributes: " + oAuth2User.getAttributes());
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId(); // "google" or "github"
@@ -48,6 +51,11 @@ public class CustomOAuthUserService extends DefaultOAuth2UserService {
         User user = userRepository.findByEmail(info.email())
                 .map(existing -> updateExistingUser(existing, info))
                 .orElseGet(() -> createNewUser(info, provider));
+
+        if (oAuth2User instanceof OidcUser oidcUser) {
+            return new CustomUserDetails(user, oAuth2User.getAttributes(),
+                    oidcUser.getIdToken(), oidcUser.getUserInfo());
+        }
 
         return new CustomUserDetails(user, oAuth2User.getAttributes());
 

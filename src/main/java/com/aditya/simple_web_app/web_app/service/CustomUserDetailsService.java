@@ -30,6 +30,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 {
                     throw new UsernameNotFoundException("USER_NOT_EXISTED");
                 }));
+
         User user = userGet.get();
 
 
