@@ -25,7 +25,7 @@ public class UserRegisteredEventListener {
         User user = event.user();
         String rawToken = event.token();
 
-        String verificationLink = "http://localhost:8080/auth/verify?token=" + rawToken;
+        String verificationLink = "http://localhost:8080/auth/verify/" + rawToken;
 
         try {
             MimeMessage message = mailSender.createMimeMessage();

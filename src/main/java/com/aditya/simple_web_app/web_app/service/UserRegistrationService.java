@@ -33,7 +33,7 @@ public class UserRegistrationService implements UserService{
     }
 
     @Override
-    public User registerUser(String email, String password) {
+    public User registerUser(String name, String email, String password) {
 
         if(userRepository.findByEmail(email).isPresent())
         {
@@ -41,9 +41,11 @@ public class UserRegistrationService implements UserService{
         }
         User user = User
                 .builder().
+                name(name).
                 email(email).
                 password(passwordEncoder.encode(password)).
-                enabled(true).
+                enabled(false).
+                emailVerified(false).
                 build();
 
         Role userRole = roleRepository.findByName("ROLE_USER").get();

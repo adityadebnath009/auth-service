@@ -63,6 +63,8 @@ public class WebSecurityConfig {
                         .requestMatchers("/home","/auth/refresh","/auth/login","/auth/register",
                                 "/",
                                 "/auth/verify/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
                                 "/index.html",
                                 "/*.html",
                                 "/*.js",
@@ -70,7 +72,7 @@ public class WebSecurityConfig {
                                 "/*.css").permitAll()
                         .requestMatchers("/home/user").hasRole("USER")
                         .requestMatchers("/home/admin").hasRole("ADMIN")
-                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all","/oauth2/**","/login/oauth2/**").authenticated().anyRequest().authenticated()
+                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all").authenticated().anyRequest().authenticated()
                 )
                 .oauth2Login(
                         oauth -> oauth.userInfoEndpoint(
@@ -138,4 +140,3 @@ public class WebSecurityConfig {
 
 
 }
-

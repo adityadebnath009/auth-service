@@ -1,15 +1,19 @@
 package com.aditya.simple_web_app.web_app.dto;
 
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public record UserRegisterDTO(
+        @NotBlank
+        String name,
 
+        @NotBlank
         @Email
-        @Column(unique = true, nullable = false)
         String email,
 
-        @Column(unique = true, nullable = false)
+        @NotBlank
+        @Size(min = 6, max = 72)
         String password
 ) {
 }

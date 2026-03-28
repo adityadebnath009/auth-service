@@ -20,6 +20,8 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,8 +30,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import ua_parser.Parser;
-import ua_parser.Client;
 
 @Validated
 @RestController
@@ -58,7 +58,7 @@ public class AuthController {
     @PostMapping(value = "/register")
     public ResponseEntity<UserRegisterResponseDTO> register(@RequestBody @Valid UserRegisterDTO userRegister)
     {
-        User user = userRegistrationService.registerUser(userRegister.email(),userRegister.password());
+        User user = userRegistrationService.registerUser(userRegister.name(), userRegister.email(), userRegister.password());
         String rawToken = emailVerificationTokenService.generateToken(user);
         applicationEventPublisher.publishEvent(new UserCreatedEvent(user, rawToken));
 
@@ -110,7 +110,16 @@ public class AuthController {
         //- The authentication provider calls the UserDetailsService, which fetches the data from the database and then verifies if it is valid, and then returns a new authenticated object.
 
 
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
+        } catch (DisabledException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (BadCredentialsException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
@@ -122,13 +131,7 @@ public class AuthController {
          refreshTokenService.createRefreshToken(userDetails.getUser(),refreshToken,httpServletRequest.getHeader("User-Agent"),httpServletRequest.getRemoteAddr());
 
 
-        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
-                .httpOnly(true)
-                .secure(true) // true in production (HTTPS)
-                .path("/auth/refresh")
-                .maxAge(7 * 24 * 60 * 60) // 7 days
-                .sameSite("Strict")
-                .build();
+        ResponseCookie refreshCookie = buildRefreshCookie(refreshToken, httpServletRequest, "Strict");
 
 
         response.addHeader("Set-Cookie", refreshCookie.toString());
@@ -182,13 +185,7 @@ public class AuthController {
 
             String newAccessToken =
                     tokenService.generateAccessToken(userDetails);
-            ResponseCookie cookie = ResponseCookie.from("refresh_token",newRefreshToken)
-                    .httpOnly(true)
-                    .secure(true)
-                    .path("/auth/refresh")
-                    .sameSite("strict")
-                    .maxAge(7*24*60*60)
-                    .build();
+            ResponseCookie cookie = buildRefreshCookie(newRefreshToken, request, "Strict");
 
             response.addHeader("Set-Cookie", cookie.toString());
 
@@ -216,19 +213,14 @@ public class AuthController {
                 .findFirst()
                 .ifPresent(cookie -> refreshTokenService.revokeToken(cookie.getValue()));
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
-                .httpOnly(true)
-                .path("/auth/refresh")
-                .secure(true)
-                .maxAge(0) //tells browser to delete it
-                .build();
+        ResponseCookie cookie = clearRefreshCookie(request, "Strict");
         response.addHeader("Set-Cookie", cookie.toString());
 
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PostMapping("/logout-all")
-    public ResponseEntity<?> logoutAll(Authentication authentication, HttpServletResponse response) {
+    public ResponseEntity<?> logoutAll(Authentication authentication, HttpServletResponse response, HttpServletRequest request) {
 
         if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -237,12 +229,7 @@ public class AuthController {
 
         refreshTokenService.revokeAllUserTokens(userDetails.getUser());
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
-                .httpOnly(true)
-                .secure(true)
-                .path("/auth/refresh")
-                .maxAge(0)
-                .build();
+        ResponseCookie cookie = clearRefreshCookie(request, "Strict");
         response.addHeader("Set-Cookie", cookie.toString());
 
         return ResponseEntity.status(HttpStatus.OK).build();
@@ -253,15 +240,10 @@ public class AuthController {
     public ResponseEntity<List<SessionDTO>> getAllSessions(Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        Parser uaParser = new Parser();
-
         List<RefreshToken> refreshTokenList = refreshTokenService.getAllTokens(userDetails.getUser());
         List<SessionDTO> sessionDTOList = new ArrayList<>();
 
         for (RefreshToken refreshToken : refreshTokenList) {
-            String uaString = refreshToken.getUserAgent();
-            Client client = uaParser.parse(uaString);
-            String deviceName = STR."\{client.userAgent.family} on \{client.os.family}";
             sessionDTOList.add(new SessionDTO(
                     refreshToken.getSessionId(),
                     refreshToken.getDeviceName(),
@@ -282,6 +264,30 @@ public class AuthController {
 
         refreshTokenService.revokeBySessionId(UUID.fromString(sessionID),userDetails.getUser());
         return  ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    private ResponseCookie buildRefreshCookie(String token, HttpServletRequest request, String sameSite) {
+        return ResponseCookie.from("refresh_token", token)
+                .httpOnly(true)
+                .secure(isSecureRequest(request))
+                .path("/auth/refresh")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite(sameSite)
+                .build();
+    }
+
+    private ResponseCookie clearRefreshCookie(HttpServletRequest request, String sameSite) {
+        return ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .secure(isSecureRequest(request))
+                .path("/auth/refresh")
+                .maxAge(0)
+                .sameSite(sameSite)
+                .build();
+    }
+
+    private boolean isSecureRequest(HttpServletRequest request) {
+        return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
     }
 
 

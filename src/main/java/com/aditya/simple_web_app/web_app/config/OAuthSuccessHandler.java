@@ -47,10 +47,10 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         refreshTokenService.createRefreshToken(userDetails.getUser(), refreshToken, request.getHeader("User-Agent"), request.getRemoteAddr());
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
-                .secure(false)   // false for local dev, true in production
+                .secure(isSecureRequest(request))
                 .path("/auth/refresh")
                 .maxAge(7 * 24 * 60 * 60)
-                .sameSite("Lax") // Lax because OAuth involves cross-site redirects
+                .sameSite("Lax")
                 .build();
 
         response.addHeader("Set-Cookie", refreshCookie.toString());
@@ -71,6 +71,10 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
             return (String) oAuth2User.getAttribute("email");
         }
         throw new RuntimeException("Unknown principal type: " + principal.getClass());
+    }
+
+    private boolean isSecureRequest(HttpServletRequest request) {
+        return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
     }
 
 }

@@ -16,6 +16,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import ua_parser.Client;
+import ua_parser.Parser;
 
 @Service
 public class RefreshTokenService {
@@ -42,6 +44,7 @@ public class RefreshTokenService {
     public RefreshToken createRefreshToken(User user, String rawToken, String userAgent, String ipAddress) {
 
         String hash = hash(rawToken);
+        String deviceName = resolveDeviceName(userAgent);
 
         RefreshToken refreshToken = RefreshToken
                 .builder()
@@ -50,6 +53,7 @@ public class RefreshTokenService {
                 .expiryDate(Instant.now().plus(7, ChronoUnit.DAYS))
                 .createdDate(Instant.now())
                 .user(user)
+                .deviceName(deviceName)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .build();
@@ -121,6 +125,21 @@ public class RefreshTokenService {
         token.setRevoked(true);
         refreshTokenRepository.save(token);
 
+    }
+
+    private String resolveDeviceName(String userAgent) {
+        if (userAgent == null || userAgent.isBlank()) {
+            return "Unknown Device";
+        }
+
+        try {
+            Client client = new Parser().parse(userAgent);
+            String browser = client.userAgent != null ? client.userAgent.family : "Unknown Browser";
+            String os = client.os != null ? client.os.family : "Unknown OS";
+            return browser + " on " + os;
+        } catch (Exception ex) {
+            return "Unknown Device";
+        }
     }
 
 

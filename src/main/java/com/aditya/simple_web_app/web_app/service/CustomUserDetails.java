@@ -85,7 +85,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User, OidcUser {
 
     @Override
     public boolean isEnabled() {
-        return user.isEnabled();
+        return user.isEnabled() && user.isEmailVerified();
     }
 
     @Override
