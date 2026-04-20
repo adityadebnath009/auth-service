@@ -1,11 +1,11 @@
 package com.aditya.simple_web_app.web_app.config;
 
 
-import com.aditya.simple_web_app.web_app.Domain.User;
-import com.aditya.simple_web_app.web_app.repository.UserRepository;
-import com.aditya.simple_web_app.web_app.service.CustomUserDetails;
-import com.aditya.simple_web_app.web_app.service.RefreshTokenService;
-import com.aditya.simple_web_app.web_app.util.TokenService;
+import com.aditya.simple_web_app.web_app.auth.Domain.User;
+import com.aditya.simple_web_app.web_app.auth.repository.UserRepository;
+import com.aditya.simple_web_app.web_app.auth.service.CustomUserDetails;
+import com.aditya.simple_web_app.web_app.auth.service.RefreshTokenService;
+import com.aditya.simple_web_app.web_app.auth.util.TokenService;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

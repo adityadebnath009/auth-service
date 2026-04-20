@@ -1,29 +1,23 @@
 package com.aditya.simple_web_app.web_app.config;
 
 
-import com.aditya.simple_web_app.web_app.service.CustomOAuthUserService;
-import com.aditya.simple_web_app.web_app.util.JwtAuthFilter;
+import com.aditya.simple_web_app.web_app.auth.service.CustomOAuthUserService;
+import com.aditya.simple_web_app.web_app.auth.util.JwtAuthFilter;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -72,7 +66,9 @@ public class WebSecurityConfig {
                                 "/*.css").permitAll()
                         .requestMatchers("/home/user").hasRole("USER")
                         .requestMatchers("/home/admin").hasRole("ADMIN")
-                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all").authenticated().anyRequest().authenticated()
+                        .requestMatchers("/api/workspaces/**").hasRole("USER")
+                        .requestMatchers("/user/me","/auth/logout","/auth/logout-all").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .oauth2Login(
                         oauth -> oauth.userInfoEndpoint(

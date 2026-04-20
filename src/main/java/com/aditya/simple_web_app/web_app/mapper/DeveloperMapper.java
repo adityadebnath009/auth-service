@@ -1,7 +1,7 @@
 package com.aditya.simple_web_app.web_app.mapper;
 
-import com.aditya.simple_web_app.web_app.Domain.Developer;
-import com.aditya.simple_web_app.web_app.dto.DeveloperResponse;
+import com.aditya.simple_web_app.web_app.legacy.Developer;
+import com.aditya.simple_web_app.web_app.legacy.DeveloperResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

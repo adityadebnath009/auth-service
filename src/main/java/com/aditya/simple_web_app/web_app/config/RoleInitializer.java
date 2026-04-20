@@ -1,8 +1,8 @@
 package com.aditya.simple_web_app.web_app.config;
 
 
-import com.aditya.simple_web_app.web_app.Domain.Role;
-import com.aditya.simple_web_app.web_app.repository.RoleRepository;
+import com.aditya.simple_web_app.web_app.auth.Domain.Role;
+import com.aditya.simple_web_app.web_app.auth.repository.RoleRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
