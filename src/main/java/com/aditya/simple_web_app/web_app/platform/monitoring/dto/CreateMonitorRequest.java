@@ -1,9 +1,7 @@
 package com.aditya.simple_web_app.web_app.platform.monitoring.dto;
 
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 public record CreateMonitorRequest(
         @NotBlank
@@ -12,7 +10,9 @@ public record CreateMonitorRequest(
         String url,
         @NotBlank
         String method,
-        @Size(min = 100, max = 599)
+
+        @Min(100)
+        @Max(599)
         Integer expectedStatus,
         @Positive
         Integer timeoutMs,
